@@ -146,17 +146,18 @@ if (WebGL.isWebGL2Available()) {
     }
   );
 
+  document.querySelector('.viewer-overlay .close').addEventListener('click', () => {
+    document.querySelector('.viewer-overlay').classList.remove('opened');
+  });
+
+  // Open viewer overlay
+  portal.addEventListener('click', () => {
+    camera2.position.set(1.5, 0, 2.2);
+    document.querySelector('.viewer-overlay').classList.add('opened');
+  });
+
+
 } else {
   const warning = WebGL.getWebGL2ErrorMessage();
   alert(warning);
 }
-
-// Close viewer overlay
-document.querySelector('.viewer-overlay .close').addEventListener('click', () => {
-  document.querySelector('.viewer-overlay').classList.remove('opened');
-});
-
-// Open viewer overlay
-portal.addEventListener('click', () => {
-  document.querySelector('.viewer-overlay').classList.add('opened');
-});
