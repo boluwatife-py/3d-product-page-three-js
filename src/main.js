@@ -128,7 +128,7 @@ if (WebGL.isWebGL2Available()) {
     },
     (xhr) => {
       const percentLoaded = Math.floor((xhr.loaded / xhr.total) * 100);
-      if (percentLoaded !== 100) {
+      if (percentLoaded < 100) {
         loadeeer.innerHTML = `Loading... ${percentLoaded}%`;
         if (!portal.contains(loadeeer)) {
           portal.appendChild(loadeeer);
