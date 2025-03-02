@@ -126,10 +126,6 @@ if (WebGL.isWebGL2Available()) {
     },
     (xhr) => {
       const percentLoaded = Math.floor((xhr.loaded / xhr.total) * 100);
-      if (percentLoaded !== 100) {
-        loadeeer.innerHTML = `Loading... ${percentLoaded}%`;
-        portal.appendChild(loadeeer);
-      }
       if (!portal.contains(renderer1.domElement)) portal.appendChild(renderer1.domElement);
       if (!port.contains(renderer2.domElement)) port.appendChild(renderer2.domElement);
     },
