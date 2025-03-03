@@ -92,30 +92,30 @@ const initializeViewer = (modelPath) => {
 
   
   const addLights = (scene) => {
-    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+    const ambient = new THREE.AmbientLight(0xffffff, 2);
     scene.add(ambient);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    dirLight.position.set(5, 10, 5);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.set(2048, 2048);
-    dirLight.shadow.camera.near = 0.1;
-    dirLight.shadow.camera.far = 50;
-    dirLight.shadow.bias = -0.0001;
-    scene.add(dirLight);
+    // const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    // dirLight.position.set(5, 10, 5);
+    // dirLight.castShadow = true;
+    // dirLight.shadow.mapSize.set(2048, 2048);
+    // dirLight.shadow.camera.near = 0.1;
+    // dirLight.shadow.camera.far = 50;
+    // dirLight.shadow.bias = -0.0001;
+    // scene.add(dirLight);
 
     
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d5524, .5);
-    hemiLight.position.set(0, 20, 0);
-    scene.add(hemiLight);
+    // const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.5);
+    // hemiLight.position.set(0, 20, 0);
+    // scene.add(hemiLight);
 
-    const fillLight = new THREE.PointLight(0xffffff, 1.0, 1);
-    fillLight.position.set(-5, 5, -5);
-    scene.add(fillLight);
+    // const fillLight = new THREE.PointLight(0xffffff, 1.0, 1);
+    // fillLight.position.set(-5, 5, -5);
+    // scene.add(fillLight);
 
     
-    const interiorLight = new THREE.PointLight(0xffffff, 0.1, 1);
-    interiorLight.position.set(0, 0.5, 0);
+    // const interiorLight = new THREE.PointLight(0xffffff, 0.1, 6);
+    // interiorLight.position.set(0, 0.5, 0);
     // scene.add(interiorLight);
   };
 
@@ -224,7 +224,7 @@ const initializeViewer = (modelPath) => {
   });
 };
 
-initializeViewer("/brothers_shoe.glb");
+initializeViewer("/winter_hat.glb");
 
 document.head.insertAdjacentHTML("beforeend", `
   <style>
