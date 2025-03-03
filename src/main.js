@@ -1,163 +1,265 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import WebGL from 'three/addons/capabilities/WebGL.js';
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import WebGL from "three/addons/capabilities/WebGL.js";
 
-const portal = document.getElementById('bg');
-const port = document.getElementById('viewer-overlay');
+const createLoadingIndicator = () => {
+  const div = document.createElement("div");
+  div.classList.add("loader");
+  div.style.cssText = `
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-family: Arial, sans-serif;
+    font-size: 1.2rem;
+    padding: 15px 25px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    z-index: 1000;
+    transition: opacity 0.3s;
+  `;
+  return div;
+};
 
-if (WebGL.isWebGL2Available()) {
+const initializeViewer = (modelPath) => {
+  const portal = document.getElementById("bg");
+  const overlay = document.getElementById("viewer-overlay");
+
+  if (!portal || !overlay) {
+    console.error("Required DOM elements missing");
+    return;
+  }
+
+  if (!WebGL.isWebGL2Available()) {
+    alert(WebGL.getWebGL2ErrorMessage());
+    return;
+  }
+
   const scene1 = new THREE.Scene();
   const scene2 = new THREE.Scene();
 
   const camera1 = new THREE.PerspectiveCamera(50, portal.clientWidth / portal.clientHeight, 0.1, 1000);
-  camera1.position.set(1.5, 0, 2.2);
+  camera1.position.set(0, 1, 3);
   camera1.lookAt(0, 0, 0);
 
+  const camera2 = new THREE.PerspectiveCamera(50, overlay.clientWidth / overlay.clientHeight, 0.1, 1000);
+  camera2.position.set(0, 1, 3);
+  camera2.lookAt(0, 0, 0);
+
   const renderer1 = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer1.setPixelRatio(window.devicePixelRatio);
   renderer1.setSize(portal.clientWidth, portal.clientHeight);
   renderer1.shadowMap.enabled = true;
   renderer1.shadowMap.type = THREE.PCFSoftShadowMap;
-
-  const camera2 = new THREE.PerspectiveCamera(50, port.clientWidth / port.clientHeight, 0.1, 1000);
-  camera2.position.set(1.5, 0, 2.2);
-  camera2.lookAt(0, 0, 0);
+  renderer1.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer1.outputEncoding = THREE.sRGBEncoding;
 
   const renderer2 = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-  renderer2.setSize(port.clientWidth, port.clientHeight);
+  renderer2.setPixelRatio(window.devicePixelRatio);
+  renderer2.setSize(overlay.clientWidth, overlay.clientHeight);
   renderer2.shadowMap.enabled = true;
   renderer2.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer2.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer2.outputEncoding = THREE.sRGBEncoding;
 
-  window.onresize = function () {
-    camera2.aspect = port.clientWidth / port.clientHeight;
+  const onResize = () => {
+    camera1.aspect = portal.clientWidth / portal.clientHeight;
+    camera1.updateProjectionMatrix();
+    renderer1.setSize(portal.clientWidth, portal.clientHeight);
+
+    camera2.aspect = overlay.clientWidth / overlay.clientHeight;
     camera2.updateProjectionMatrix();
-    renderer2.setSize(port.clientWidth, port.clientHeight);
+    renderer2.setSize(overlay.clientWidth, overlay.clientHeight);
   };
+  window.addEventListener("resize", onResize);
 
   const controls = new OrbitControls(camera2, renderer2.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.screenSpacePanning = false;
-  controls.minDistance = 2;
-  controls.maxDistance = 5;
+  controls.dampingFactor = 0.1;
+  controls.minDistance = 1.5;
+  controls.maxDistance = 10;
+  controls.enablePan = false;
 
-  // Set cursor to "grab" when hovering over the viewer
-  port.style.cursor = "grab";
-
-  // When the user starts dragging, change cursor to "grabbing"
-  controls.addEventListener('start', () => {
-    port.style.cursor = "grabbing";
+  overlay.style.cursor = "grab";
+  controls.addEventListener("start", () => {
+    overlay.style.cursor = "grabbing";
+  });
+  controls.addEventListener("end", () => {
+    overlay.style.cursor = "grab";
   });
 
-  // When the user stops dragging, revert to "grab"
-  controls.addEventListener('end', () => {
-    port.style.cursor = "grab";
-  });
+  
+  const addLights = (scene) => {
+    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+    scene.add(ambient);
 
-  // Lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-  scene1.add(ambientLight);
-  scene2.add(ambientLight.clone());
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight.position.set(5, 10, 5);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.set(2048, 2048);
+    dirLight.shadow.camera.near = 0.1;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.bias = -0.0001;
+    scene.add(dirLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  directionalLight.position.set(5, 10, 5);
-  directionalLight.castShadow = true;
-  scene1.add(directionalLight);
-  scene2.add(directionalLight.clone());
+    
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d5524, .5);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
 
-  const spotLight = new THREE.SpotLight(0xffffff, 1.2);
-  spotLight.position.set(2, 5, 3);
-  spotLight.angle = Math.PI / 6;
-  spotLight.penumbra = 0.3;
-  spotLight.decay = 2;
-  spotLight.distance = 10;
-  spotLight.castShadow = true;
-  scene1.add(spotLight);
-  scene2.add(spotLight.clone());
+    const fillLight = new THREE.PointLight(0xffffff, 1.0, 1);
+    fillLight.position.set(-5, 5, -5);
+    scene.add(fillLight);
 
-  const pointLight = new THREE.PointLight(0xffffff, 1, 15);
-  pointLight.position.set(-3, 4, 3);
-  scene1.add(pointLight);
-  scene2.add(pointLight.clone());
+    
+    const interiorLight = new THREE.PointLight(0xffffff, 0.1, 1);
+    interiorLight.position.set(0, 0.5, 0);
+    // scene.add(interiorLight);
+  };
 
-  // Loading indicator
+  addLights(scene1);
+  addLights(scene2);
+
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(20, 20),
+    new THREE.ShadowMaterial({ opacity: 0.2 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene1.add(ground.clone());
+  scene2.add(ground);
+
   const loader = new GLTFLoader();
-  const loadeeer = document.createElement('div');
-  loadeeer.classList.add('loadeeer');
+  const loadingIndicator = createLoadingIndicator();
+  portal.appendChild(loadingIndicator);
 
   loader.load(
-    '/shoe.glb',
+    modelPath,
     (gltf) => {
-      const shoe1 = gltf.scene.clone(); // Rotating shoe (bg)
-      const shoe2 = gltf.scene.clone(); // Static shoe (viewer-overlay)
+      const model1 = gltf.scene.clone();
+      const model2 = gltf.scene.clone();
 
-      shoe1.position.z = shoe2.position.z = 0;
-      shoe1.rotation.y = shoe2.rotation.y = 2;
+      const normalizeModel = (model) => {
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 2 / maxDim;
+        model.scale.set(scale, scale, scale);
+        model.position.sub(center.multiplyScalar(scale));
+        model.rotation.set(0, 0, 0);
 
-      shoe1.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
 
-      shoe2.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
+            if (child.material) {
+              if (!(child.material instanceof THREE.MeshStandardMaterial)) {
+                child.material = new THREE.MeshStandardMaterial({
+                  color: child.material.color || 0xffffff,
+                  metalness: 0.3,
+                  roughness: 0.6,
+                  envMapIntensity: 1.0,
+                });
+              }
 
-      scene1.add(shoe1); // Add rotating shoe to bg
-      scene2.add(shoe2); // Add static shoe to viewer-overlay
+              child.material.emissive = new THREE.Color(0x050505);
+              child.material.ambientIntensity = 1.0;
+              child.material.side = THREE.DoubleSide;
+            }
+          }
+        });
+      };
 
-      const renderBG = () => {
-        requestAnimationFrame(renderBG);
-        shoe1.rotation.y += 0.001; // Rotate only bg shoe
+      normalizeModel(model1);
+      normalizeModel(model2);
+
+      scene1.add(model1);
+      scene2.add(model2);
+
+      const animatePortal = () => {
+        requestAnimationFrame(animatePortal);
+        model1.rotation.y += 0.01;
         renderer1.render(scene1, camera1);
       };
 
-      const renderOverlay = () => {
-        requestAnimationFrame(renderOverlay);
+      const animateOverlay = () => {
+        requestAnimationFrame(animateOverlay);
         controls.update();
         renderer2.render(scene2, camera2);
       };
 
-      renderBG();
-      renderOverlay();
+      animatePortal();
+      animateOverlay();
+
+      portal.appendChild(renderer1.domElement);
+      overlay.appendChild(renderer2.domElement);
+      loadingIndicator.style.opacity = "0";
+      if (loadingIndicator.parentNode) loadingIndicator.parentNode.removeChild(loadingIndicator);
     },
     (xhr) => {
-      const percentLoaded = Math.floor((xhr.loaded / xhr.total) * 100);
-      if (percentLoaded < 100) {
-        loadeeer.innerHTML = `Loading... ${percentLoaded}%`;
-        if (!portal.contains(loadeeer)) {
-          portal.appendChild(loadeeer);
-        }
-      } else {
-        if (portal.contains(loadeeer)) {
-          portal.removeChild(loadeeer);
-        }
-      }
-      if (!portal.contains(renderer1.domElement)) portal.appendChild(renderer1.domElement);
-      if (!port.contains(renderer2.domElement)) port.appendChild(renderer2.domElement);
+      const percent = Math.round((xhr.loaded / xhr.total) * 100);
+      loadingIndicator.textContent = `Loading... ${percent}%`;
     },
     (error) => {
-      console.error("An error occurred", error);
+      console.error("Loading failed:", error);
+      loadingIndicator.textContent = "Error: Could not load model";
+      loadingIndicator.style.background = "rgba(255, 0, 0, 0.8)";
+      if (loadingIndicator.parentNode) loadingIndicator.parentNode.removeChild(loadingIndicator);
     }
   );
 
-  document.querySelector('.viewer-overlay .close').addEventListener('click', () => {
-    document.querySelector('.viewer-overlay').classList.remove('opened');
+  const closeButton = document.querySelector(".viewer-overlay .close");
+  if (closeButton) {
+    closeButton.addEventListener("click", () => {
+      overlay.classList.remove("opened");
+    });
+  }
+  portal.addEventListener("click", () => {
+    camera2.position.set(0, 1, 3);
+    overlay.classList.add("opened");
   });
+};
 
-  // Open viewer overlay
-  portal.addEventListener('click', () => {
-    camera2.position.set(1.5, 0, 2.2);
-    document.querySelector('.viewer-overlay').classList.add('opened');
-  });
+initializeViewer("/brothers_shoe.glb");
 
-
-} else {
-  const warning = WebGL.getWebGL2ErrorMessage();
-  alert(warning);
-}
+document.head.insertAdjacentHTML("beforeend", `
+  <style>
+    #viewer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+    #viewer-overlay.opened {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #viewer-overlay .close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #bg {
+      cursor: pointer;
+    }
+  </style>
+`);
