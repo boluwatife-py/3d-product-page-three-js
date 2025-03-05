@@ -18,8 +18,8 @@ This is a modern eCommerce product page that provides an interactive 3D experien
 
 1. **Clone the Repository**
 ```sh
-git clone 
-cd ecommerce-3d
+git clone https://github.com/boluwatife-py/3d-product-page-three-js.git
+cd 3d-product-page-three-js
 ```
 
 2. **Install Dependencies**
